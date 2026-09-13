@@ -35,28 +35,81 @@ class MockOfflineProvider(BaseLLMProvider):
         return f"[Mock Chatbot Response]: Xin chào! Tôi đã nhận được câu hỏi '{prompt}'. (Chế độ Chatbot không có Tool tra cứu dữ liệu thời gian thực)."
 
     def generate_with_tools(self, prompt: str, tools_schema: List[Dict[str, Any]], system_prompt: str = "") -> Dict[str, Any]:
-        prompt_lower = prompt.lower()
-        
-        # Mô phỏng nhận diện intent gọi Tool
-        if "sv2026001" in prompt_lower and "đặt lịch" in prompt_lower:
+        """
+        Mock nhận diện intent dựa trên từ khoá trong prompt.
+        Ánh xạ đúng sang 2 tool của chủ đề Tuyển dụng & Sàng lọc CV.
+        """
+        p = prompt.lower()
+
+        # ----------------------------------------------------------------
+        # Intent: GỬI THÔNG BÁO MỜI PHỎNG VẤN
+        # Ưu tiên kiểm tra trước vì câu TC04 chứa cả 2 từ khoá
+        # ----------------------------------------------------------------
+        if any(kw in p for kw in ["mời phỏng vấn", "gửi thông báo", "send_interview",
+                                   "thông báo mời", "lịch phỏng vấn"]):
+            # Trích xuất tên ứng viên và email thô từ prompt (mock đơn giản)
+            import re
+            email_match = re.search(r"[\w.+-]+@[\w-]+\.[\w.]+", prompt)
+            email = email_match.group(0) if email_match else "ung.vien@email.com"
+            # Trích tên vị trí từ dấu nháy đơn/nháy kép
+            pos_match = re.search(r"['\"]([^'\"]+)['\"]|vị trí\s+([\w\s]+?)(?:\s+lúc|\s+vào|\s+cho|$)", prompt, re.IGNORECASE)
+            position = "Backend Engineer L2"
+            if pos_match:
+                position = (pos_match.group(1) or pos_match.group(2) or position).strip()
+            # Trích thời gian
+            time_match = re.search(r"(\d{1,2}:\d{2}\s+\d{1,2}/\d{1,2}/\d{4})", prompt)
+            interview_time = time_match.group(1) if time_match else "14:00 22/09/2026"
             return {
                 "type": "tool_call",
-                "tool_name": "schedule_appointment",
-                "arguments": {"student_id": "SV2026001", "datetime_str": "14:00 15/09/2026", "advisor_name": "PGS.TS Nguyễn Văn A"},
-                "thought": "Người dùng yêu cầu đặt lịch hẹn tư vấn cho sinh viên SV2026001. Tôi sẽ gọi tool schedule_appointment."
+                "tool_name": "send_interview_notification",
+                "arguments": {
+                    "candidate_name": "Lê Văn Hùng",
+                    "candidate_email": email,
+                    "position_name": position,
+                    "interview_datetime": interview_time,
+                    "interview_format": "online"
+                },
+                "thought": (
+                    f"Người dùng yêu cầu gửi thông báo mời phỏng vấn. "
+                    f"Tôi sẽ gọi tool send_interview_notification với email={email}, "
+                    f"vị trí='{position}', thời gian={interview_time}."
+                )
             }
-        elif "sv2026001" in prompt_lower or "tra cứu" in prompt_lower:
+
+        # ----------------------------------------------------------------
+        # Intent: TRA CỨU TIÊU CHÍ TUYỂN DỤNG
+        # ----------------------------------------------------------------
+        elif any(kw in p for kw in ["tiêu chí", "tra cứu", "yêu cầu", "vị trí",
+                                     "tuyển dụng", "get_job_criteria"]):
+            import re
+            # Trích tên vị trí từ dấu nháy đơn/kép hoặc từ khoá vị trí
+            pos_match = re.search(r"['\"]([^'\"]+)['\"]|(?:vị trí|position)\s+['\"]?([\w\s]+)['\"]?", prompt, re.IGNORECASE)
+            position = "Software Engineer L3"
+            if pos_match:
+                position = (pos_match.group(1) or pos_match.group(2) or position).strip()
             return {
                 "type": "tool_call",
-                "tool_name": "academic_query",
-                "arguments": {"student_id": "SV2026001"},
-                "thought": "Người dùng muốn tra cứu thông tin học vụ của sinh viên SV2026001. Tôi sẽ gọi tool academic_query."
+                "tool_name": "get_job_criteria",
+                "arguments": {"position_name": position},
+                "thought": (
+                    f"Người dùng muốn tra cứu tiêu chí tuyển dụng cho vị trí '{position}'. "
+                    f"Tôi sẽ gọi tool get_job_criteria."
+                )
             }
+
+        # ----------------------------------------------------------------
+        # Câu hỏi chung — trả lời trực tiếp, không gọi Tool
+        # ----------------------------------------------------------------
         else:
             return {
                 "type": "text",
-                "content": f"[Mock Agent Response]: Xin chào! Quy chế học vụ VinUni yêu cầu sinh viên tích lũy tối thiểu 120 tín chỉ và duy trì GPA trên 2.0 để tốt nghiệp.",
-                "thought": "Câu hỏi chung về quy chế học vụ, trả lời trực tiếp không cần gọi Tool."
+                "content": (
+                    "[Mock Agent Response]: Quy trình tuyển dụng tiêu chuẩn gồm 4 bước: "
+                    "(1) Nộp hồ sơ & sàng lọc CV → (2) Phỏng vấn vòng kỹ thuật → "
+                    "(3) Phỏng vấn văn hoá với HR → (4) Offer & ký hợp đồng. "
+                    "Mỗi vị trí có thể có thêm bài test thực hành tuỳ theo yêu cầu."
+                ),
+                "thought": "Câu hỏi chung về quy trình tuyển dụng, trả lời trực tiếp không cần gọi Tool."
             }
 
 

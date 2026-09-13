@@ -1,51 +1,92 @@
 """
 🛠️ TOOL DEFINITIONS & EXECUTION BACKEND
-Mã nguồn chứa danh sách Tool Schemas (JSON Schema) và Execution Layer phục vụ cho MCP Server.
+Mã nguồn chứa danh sách Tool Schemas (JSON Schema) và Execution Layer
+phục vụ cho MCP Server — Chủ đề: Trợ lý Tuyển dụng & Sàng lọc CV.
 """
 
 import json
+from datetime import datetime
 from typing import Dict, Any
 
 # ==============================================================================
-# 1. KHAI BÁO TOOL SCHEMAS CHUẨN NATIVE JSON SCHEMA (TASK 1.2)
+# 1. KHAI BÁO TOOL SCHEMAS CHUẨN NATIVE JSON SCHEMA
 # ==============================================================================
 
 TOOLS_SCHEMA = [
-    # Tool 1: Đã được định nghĩa mẫu sẵn cho Học viên tham khảo
+    # --------------------------------------------------------------------------
+    # Tool 1: Tra cứu tiêu chí tuyển dụng theo mã hoặc tên vị trí
+    # --------------------------------------------------------------------------
     {
-        "name": "academic_query",
-        "description": "Tra cứu hồ sơ và thông tin học vụ của sinh viên VinUni bằng mã sinh viên.",
+        "name": "get_job_criteria",
+        "description": (
+            "Tra cứu tiêu chí tuyển dụng chi tiết của một vị trí công việc "
+            "bao gồm: yêu cầu kỹ năng, số năm kinh nghiệm, bằng cấp tối thiểu "
+            "và mức lương tham chiếu. Dùng khi cần đánh giá mức độ phù hợp của ứng viên."
+        ),
         "parameters": {
             "type": "object",
             "properties": {
-                "student_id": {
+                "position_name": {
                     "type": "string",
-                    "description": "Mã sinh viên cần tra cứu (ví dụ: 'SV2026001')"
+                    "description": (
+                        "Tên vị trí tuyển dụng cần tra cứu "
+                        "(ví dụ: 'Software Engineer L3', 'Data Analyst', 'Backend Engineer L2')"
+                    )
+                },
+                "position_id": {
+                    "type": "string",
+                    "description": (
+                        "Mã định danh vị trí tuyển dụng (ví dụ: 'POS-001'). "
+                        "Không bắt buộc nếu đã cung cấp position_name."
+                    )
                 }
             },
-            "required": ["student_id"]
+            "required": ["position_name"]
         }
     },
-    
+
     # --------------------------------------------------------------------------
-    # TODO 1.2: HỌC VIÊN HOÀN THIỆN TOOL SCHEMA CHO 'schedule_appointment'
-    # 🎯 YÊU CẦU THIẾT KẾ SCHEMA (JSON SCHEMA STANDARD):
-    # 1. Tool dùng để đặt lịch hẹn tư vấn học vụ với Cố vấn học tập VinUni.
-    # 2. Thiết kế các tham số (properties) để LLM trích xuất:
-    #    - student_id (string): Mã sinh viên cần đặt lịch (ví dụ: 'SV2026001')
-    #    - datetime_str (string): Thời gian hẹn (ví dụ: '14:00 15/09/2026')
-    #    - advisor_name (string): Tên cố vấn học tập
-    # 3. Khai báo danh sách các trường bắt buộc (required).
+    # Tool 2: Gửi thông báo mời phỏng vấn đến ứng viên
     # --------------------------------------------------------------------------
     {
-        "name": "schedule_appointment",
-        "description": "Đặt lịch hẹn tư vấn học vụ với Cố vấn học tập VinUni.",
+        "name": "send_interview_notification",
+        "description": (
+            "Gửi email thông báo mời phỏng vấn chính thức đến ứng viên đã vượt qua "
+            "vòng sàng lọc CV. Thông báo bao gồm: tên ứng viên, vị trí ứng tuyển, "
+            "thời gian và hình thức phỏng vấn."
+        ),
         "parameters": {
             "type": "object",
             "properties": {
-                # TODO 1.2: Khai báo các thuộc tính tham số cho Tool tại đây...
+                "candidate_name": {
+                    "type": "string",
+                    "description": "Họ và tên đầy đủ của ứng viên (ví dụ: 'Trần Thị Mai')"
+                },
+                "candidate_email": {
+                    "type": "string",
+                    "description": "Địa chỉ email của ứng viên (ví dụ: 'mai.tt@email.com')"
+                },
+                "position_name": {
+                    "type": "string",
+                    "description": "Tên vị trí ứng viên ứng tuyển (ví dụ: 'Data Analyst')"
+                },
+                "interview_datetime": {
+                    "type": "string",
+                    "description": (
+                        "Thời gian phỏng vấn theo định dạng 'HH:MM DD/MM/YYYY' "
+                        "(ví dụ: '10:00 20/09/2026')"
+                    )
+                },
+                "interview_format": {
+                    "type": "string",
+                    "description": (
+                        "Hình thức phỏng vấn: 'online' (Google Meet) hoặc 'offline' (tại văn phòng). "
+                        "Mặc định là 'online' nếu không chỉ định."
+                    ),
+                    "enum": ["online", "offline"]
+                }
             },
-            "required": [] # TODO 1.2: Khai báo danh sách các trường bắt buộc tại đây...
+            "required": ["candidate_name", "candidate_email", "position_name", "interview_datetime"]
         }
     }
 ]
@@ -54,65 +95,163 @@ TOOLS_SCHEMA = [
 # 2. MÔ PHỎNG DỮ LIỆU & HÀM THỰC THI TOOL (EXECUTION LAYER)
 # ==============================================================================
 
-MOCK_DATABASE = {
-    "SV2026001": {
-        "full_name": "Nguyễn Văn An",
-        "class": "AI-K4",
-        "gpa": 3.85,
-        "email": "an.nv@vinuni.edu.vn",
-        "status": "Đang học",
-        "advisor": "PGS.TS Nguyễn Văn A"
+# Cơ sở dữ liệu mô phỏng tiêu chí tuyển dụng
+JOB_DATABASE: Dict[str, Dict[str, Any]] = {
+    "software engineer l3": {
+        "position_id": "POS-001",
+        "position_name": "Software Engineer L3",
+        "department": "Engineering",
+        "required_skills": ["Python", "Java hoặc Go", "RESTful API", "Docker", "SQL"],
+        "min_experience_years": 3,
+        "min_education": "Đại học CNTT hoặc ngành liên quan",
+        "nice_to_have": ["Kubernetes", "AWS/GCP", "Microservices"],
+        "salary_range_vnd": "25.000.000 – 40.000.000",
+        "headcount": 2
     },
-    "SV2026002": {
-        "full_name": "Trần Thị Bình",
-        "class": "AI-K4",
-        "gpa": 3.60,
-        "email": "binh.tt@vinuni.edu.vn",
-        "status": "Đang học",
-        "advisor": "TS. Lê Thị B"
+    "data analyst": {
+        "position_id": "POS-002",
+        "position_name": "Data Analyst",
+        "department": "Business Intelligence",
+        "required_skills": ["SQL", "Python (pandas, matplotlib)", "Power BI hoặc Tableau", "Excel nâng cao"],
+        "min_experience_years": 1,
+        "min_education": "Đại học Thống kê, CNTT, Kinh tế hoặc ngành liên quan",
+        "nice_to_have": ["Machine Learning cơ bản", "Spark", "Looker"],
+        "salary_range_vnd": "15.000.000 – 25.000.000",
+        "headcount": 3
+    },
+    "backend engineer l2": {
+        "position_id": "POS-003",
+        "position_name": "Backend Engineer L2",
+        "department": "Engineering",
+        "required_skills": ["Python hoặc Node.js", "REST API", "PostgreSQL hoặc MySQL", "Git"],
+        "min_experience_years": 2,
+        "min_education": "Cao đẳng hoặc Đại học CNTT",
+        "nice_to_have": ["Redis", "RabbitMQ", "CI/CD"],
+        "salary_range_vnd": "18.000.000 – 30.000.000",
+        "headcount": 4
+    },
+    "product manager": {
+        "position_id": "POS-004",
+        "position_name": "Product Manager",
+        "department": "Product",
+        "required_skills": ["Quản lý roadmap sản phẩm", "Phân tích dữ liệu người dùng", "Agile/Scrum", "Viết PRD"],
+        "min_experience_years": 4,
+        "min_education": "Đại học Kinh tế, CNTT hoặc ngành liên quan",
+        "nice_to_have": ["Technical background", "A/B Testing", "Figma"],
+        "salary_range_vnd": "30.000.000 – 55.000.000",
+        "headcount": 1
     }
 }
 
 
-def execute_academic_query(student_id: str) -> str:
-    """Thực thi tra cứu học vụ theo mã sinh viên"""
-    student = MOCK_DATABASE.get(student_id.strip().upper())
-    if student:
+def execute_get_job_criteria(position_name: str, position_id: str = None) -> str:
+    """Tra cứu tiêu chí tuyển dụng theo tên vị trí"""
+    key = position_name.strip().lower()
+
+    # Tìm kiếm linh hoạt theo từ khóa
+    matched = None
+    for db_key, data in JOB_DATABASE.items():
+        if key in db_key or db_key in key:
+            matched = data
+            break
+
+    # Tìm theo position_id nếu không khớp tên
+    if not matched and position_id:
+        for data in JOB_DATABASE.values():
+            if data.get("position_id", "").upper() == position_id.strip().upper():
+                matched = data
+                break
+
+    if matched:
         return json.dumps({
             "status": "SUCCESS",
-            "student_id": student_id,
-            "data": student
-        }, ensure_ascii=False)
+            "position_id": matched["position_id"],
+            "position_name": matched["position_name"],
+            "data": {
+                "department": matched["department"],
+                "required_skills": matched["required_skills"],
+                "min_experience_years": matched["min_experience_years"],
+                "min_education": matched["min_education"],
+                "nice_to_have": matched["nice_to_have"],
+                "salary_range_vnd": matched["salary_range_vnd"],
+                "headcount": matched["headcount"]
+            }
+        }, ensure_ascii=False, indent=2)
     else:
         return json.dumps({
             "status": "NOT_FOUND",
-            "message": f"Không tìm thấy dữ liệu sinh viên có mã '{student_id}'"
+            "message": (
+                f"Không tìm thấy tiêu chí tuyển dụng cho vị trí '{position_name}'. "
+                "Vui lòng kiểm tra lại tên vị trí hoặc liên hệ HR để được hỗ trợ."
+            )
         }, ensure_ascii=False)
 
 
-def execute_schedule_appointment(student_id: str, datetime_str: str, advisor_name: str = "PGS.TS Nguyễn Văn A") -> str:
-    """Thực thi đặt lịch hẹn tư vấn học vụ"""
+def execute_send_interview_notification(
+    candidate_name: str,
+    candidate_email: str,
+    position_name: str,
+    interview_datetime: str,
+    interview_format: str = "online"
+) -> str:
+    """Gửi thông báo mời phỏng vấn đến ứng viên"""
+    # Tạo mã xác nhận giả lập
+    timestamp = datetime.now().strftime("%Y%m%d%H%M")
+    notification_id = f"NTF-{timestamp}-{candidate_email.split('@')[0].upper()[:6]}"
+
+    location_info = (
+        "Link Google Meet: meet.google.com/abc-defg-hij"
+        if interview_format == "online"
+        else "Địa điểm: Tầng 12, Tòa nhà Innovation Hub, 458 Minh Khai, Hà Nội"
+    )
+
     return json.dumps({
         "status": "SUCCESS",
-        "booking_id": f"BK-{student_id}-99",
-        "student_id": student_id,
-        "datetime": datetime_str,
-        "advisor": advisor_name,
-        "message": f"Đặt lịch thành công cho sinh viên {student_id} với {advisor_name} vào lúc {datetime_str}."
-    }, ensure_ascii=False)
+        "notification_id": notification_id,
+        "recipient": {
+            "name": candidate_name,
+            "email": candidate_email
+        },
+        "interview_details": {
+            "position": position_name,
+            "datetime": interview_datetime,
+            "format": interview_format,
+            "location": location_info
+        },
+        "message": (
+            f"✅ Đã gửi email mời phỏng vấn thành công đến {candidate_name} "
+            f"({candidate_email}) cho vị trí '{position_name}' "
+            f"vào lúc {interview_datetime} — Hình thức: {interview_format.upper()}."
+        )
+    }, ensure_ascii=False, indent=2)
 
 
-# Router gọi tool thực tế
+# ==============================================================================
+# 3. TOOL ROUTER — ÁNH XẠ TÊN TOOL → HÀM THỰC THI
+# ==============================================================================
+
 TOOL_ROUTER = {
-    "academic_query": execute_academic_query,
-    "schedule_appointment": execute_schedule_appointment
+    "get_job_criteria": execute_get_job_criteria,
+    "send_interview_notification": execute_send_interview_notification
 }
 
+
 def dispatch_tool_call(tool_name: str, arguments: Dict[str, Any]) -> str:
-    """Hàm trung chuyển thực thi tool"""
+    """Hàm trung chuyển thực thi tool theo tên và tham số"""
     if tool_name in TOOL_ROUTER:
         try:
             return TOOL_ROUTER[tool_name](**arguments)
+        except TypeError as e:
+            return json.dumps({
+                "status": "ARGUMENT_ERROR",
+                "error": f"Tham số không hợp lệ cho tool '{tool_name}': {str(e)}"
+            }, ensure_ascii=False)
         except Exception as e:
-            return json.dumps({"status": "EXECUTION_ERROR", "error": str(e)}, ensure_ascii=False)
-    return json.dumps({"status": "UNKNOWN_TOOL", "error": f"Tool '{tool_name}' không tồn tại!"}, ensure_ascii=False)
+            return json.dumps({
+                "status": "EXECUTION_ERROR",
+                "error": str(e)
+            }, ensure_ascii=False)
+    return json.dumps({
+        "status": "UNKNOWN_TOOL",
+        "error": f"Tool '{tool_name}' không tồn tại trong hệ thống!"
+    }, ensure_ascii=False)

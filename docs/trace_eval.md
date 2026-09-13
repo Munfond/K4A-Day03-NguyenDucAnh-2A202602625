@@ -1,8 +1,8 @@
 # 📊 BÁO CÁO THU HOẠCH NGHIỆM THU BÀI LAB 3 (BƯỚC 3 — SUBMISSION ARTIFACT)
 
-> **Họ và Tên Học viên:** [Điền Họ và Tên]  
-> **Mã Sinh Viên / Mã Học viên:** [Điền MSSV]  
-> **Chủ đề Lựa chọn:** [Điền tên chủ đề đã chọn từ docs/DANH_SACH_DE_TAI.md hoặc Đề tài Mở]  
+> **Họ và Tên Học viên:** Nguyễn Đức Anh  
+> **Mã Sinh Viên / Mã Học viên:** 2A202602625  
+> **Chủ đề Lựa chọn:** Trợ lý Tuyển dụng & Sàng lọc CV: Tra cứu tiêu chí tuyển dụng vị trí và gửi thông báo lịch phỏng vấn.
 
 ---
 
@@ -10,11 +10,11 @@
 
 | Tiêu chí Đánh giá | Mức độ (1 - 5) | Giải trình chi tiết lý do chọn điểm |
 | :--- | :---: | :--- |
-| **1. Multi-step Reasoning** | / 5 | Bài toán có yêu cầu chia nhỏ nhiều bước suy luận nối tiếp nhau không? |
-| **2. Tool Interaction** | / 5 | Hệ thống có cần kết nối với MCP Server / Cơ sở dữ liệu bên ngoài không? |
-| **3. Dynamic Decision** | / 5 | Bước tiếp theo có phụ thuộc vào kết quả quan sát bước trước không? |
-| **4. Long Horizon Goal** | / 5 | Hệ thống có phải giữ mục tiêu xuyên suốt qua nhiều lượt xử lý không? |
-| **TỔNG ĐIỂM AGENTIC FIT** | **/ 20** | *Nếu tổng điểm > 12/20: Bài toán rất phù hợp triển khai Agentic System.* |
+| **1. Multi-step Reasoning** | **5** / 5 | ✅ **Điểm tối đa.** Bài toán yêu cầu chuỗi suy luận nhiều bước rõ ràng và nối tiếp nhau: **(1)** Nhận yêu cầu tìm ứng viên → **(2)** Gọi tool tra cứu tiêu chí vị trí (kỹ năng, kinh nghiệm, bằng cấp yêu cầu) → **(3)** Phân tích & so sánh thông tin CV ứng viên với tiêu chí → **(4)** Đưa ra phán quyết sàng lọc (đạt / không đạt) → **(5)** Nếu đạt, gọi tool gửi thông báo lịch phỏng vấn. Agent không thể bỏ qua bất kỳ bước nào mà không ảnh hưởng đến kết quả cuối. |
+| **2. Tool Interaction** | **5** / 5 | ✅ **Điểm tối đa.** Hệ thống bắt buộc phải tương tác với ít nhất **2 công cụ ngoài** qua MCP Server: **(a)** Tool `get_job_criteria` — tra cứu tiêu chí tuyển dụng từ CSDL nhân sự (yêu cầu kỹ năng, kinh nghiệm, mức lương...); **(b)** Tool `send_interview_notification` — gửi email/thông báo lịch phỏng vấn đến ứng viên. Không có tool nào, Agent chỉ là chatbot thông thường, không thể hoàn thành bài toán. |
+| **3. Dynamic Decision** | **4** / 5 | ✅ **Điểm cao.** Quyết định của Agent ở mỗi bước phụ thuộc hoàn toàn vào kết quả quan sát bước trước: nếu tool `get_job_criteria` trả về *"vị trí không tồn tại"* → Agent dừng và báo lỗi (không gửi thông báo); nếu CV ứng viên không đủ điểm kinh nghiệm → Agent từ chối thay vì mời phỏng vấn. Trừ 1 điểm vì luồng rẽ nhánh chưa quá phức tạp (chủ yếu là Đạt/Không đạt, chưa có nhiều kịch bản trung gian). |
+| **4. Long Horizon Goal** | **4** / 5 | ✅ **Điểm cao.** Agent phải duy trì ngữ cảnh xuyên suốt toàn bộ phiên làm việc: ghi nhớ *vị trí tuyển dụng đang xét*, *tiêu chí đã tra cứu*, *danh sách ứng viên đã sàng lọc* qua nhiều lượt gọi tool liên tiếp. Trong kịch bản sàng lọc nhiều CV cùng lúc, Agent phải giữ mục tiêu "hoàn thành danh sách ứng viên đủ điều kiện" mà không bị lạc hướng. Trừ 1 điểm vì mỗi phiên tuyển dụng thường có thời gian xử lý không quá dài. |
+| **TỔNG ĐIỂM AGENTIC FIT** | **18 / 20** | 🏆 *Tổng điểm **18/20 > 12/20**: Bài toán **RẤT PHÙ HỢP** triển khai Agentic System. Đây là use-case lý tưởng với đầy đủ đặc trưng: chuỗi suy luận đa bước, phụ thuộc tool ngoài, quyết định động theo context và mục tiêu dài hạn.* |
 
 ---
 

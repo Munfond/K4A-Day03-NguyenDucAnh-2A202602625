@@ -1,0 +1,37 @@
+[
+  {
+    "id": "TC01",
+    "type": "direct_query",
+    "question": "Chào bạn, quy trình tuyển dụng tiêu chuẩn tại công ty gồm những bước nào?",
+    "expected_behavior": "Agent trả lời trực tiếp từ System Prompt về quy trình tuyển dụng chung (nộp CV → sàng lọc → phỏng vấn → offer), không cần gọi bất kỳ Tool nào.",
+    "complexity": "Low"
+  },
+  {
+    "id": "TC02",
+    "type": "single_tool_query",
+    "question": "Hãy tra cứu tiêu chí tuyển dụng cho vị trí 'Software Engineer L3'.",
+    "expected_behavior": "Agent nhận diện nhu cầu tra cứu tiêu chí, tự động phát sinh Tool Call 'get_job_criteria' với position_id tương ứng. Agent trình bày kết quả gồm: kỹ năng yêu cầu, số năm kinh nghiệm, bằng cấp và mức lương tham chiếu.",
+    "complexity": "Medium"
+  },
+  {
+    "id": "TC03",
+    "type": "appointment_booking",
+    "question": "Gửi thông báo mời phỏng vấn cho ứng viên Trần Thị Mai (email: mai.tt@email.com) vào lúc 10:00 ngày 20/09/2026 cho vị trí 'Data Analyst'.",
+    "expected_behavior": "Agent tự động phát sinh Tool Call 'send_interview_notification' với đúng thông tin: tên ứng viên, email, thời gian phỏng vấn và tên vị trí tuyển dụng. Xác nhận gửi thông báo thành công.",
+    "complexity": "Medium"
+  },
+  {
+    "id": "TC04",
+    "type": "multi_step_reasoning",
+    "question": "CV của ứng viên Lê Văn Hùng có 4 năm kinh nghiệm Python, tốt nghiệp đại học CNTT. Hãy kiểm tra xem anh ấy có đủ tiêu chí cho vị trí 'Backend Engineer L2' không? Nếu đủ, hãy gửi thông báo mời phỏng vấn vào 14:00 ngày 22/09/2026.",
+    "expected_behavior": "Agent thực hiện chuỗi suy luận ReAct đa bước: (1) Gọi Tool 'get_job_criteria' để lấy tiêu chí vị trí 'Backend Engineer L2' → (2) So sánh CV ứng viên với tiêu chí nhận được → (3) Vì đủ điều kiện, tiếp tục gọi Tool 'send_interview_notification' với thông tin ứng viên và thời gian phỏng vấn → (4) Trình bày kết quả sàng lọc và xác nhận gửi thông báo thành công.",
+    "complexity": "High"
+  },
+  {
+    "id": "TC05",
+    "type": "edge_case_handling",
+    "question": "Tra cứu tiêu chí tuyển dụng cho vị trí 'Quantum Computing Specialist' (mã vị trí: POS-9999).",
+    "expected_behavior": "Agent gọi Tool 'get_job_criteria' với mã vị trí POS-9999, nhận kết quả NOT_FOUND từ Tool và đưa ra phản hồi lịch sự, thông báo vị trí không tồn tại trong hệ thống mà không bịa đặt dữ liệu tiêu chí.",
+    "complexity": "Medium"
+  }
+]
